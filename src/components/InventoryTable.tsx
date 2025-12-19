@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Download, Minus, Plus } from "lucide-react";
-import { useStore } from "../useStore";
+import { useStore } from "../store/useStore";
 
 const formatCurrency = (value: number) =>
   value.toLocaleString("en-US", { style: "currency", currency: "USD" });

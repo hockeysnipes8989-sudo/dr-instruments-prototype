@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Cloud, CloudCheck, CloudOff } from "lucide-react";
+import { Cloud, CloudCheck, CloudOff, Loader2 } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 import Sidebar, { TabKey } from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
@@ -7,7 +7,7 @@ import InventoryTable from "./components/InventoryTable";
 import InvoiceScanner from "./components/InvoiceScanner";
 import OrdersPanel from "./components/OrdersPanel";
 import ToastStack from "./components/ToastStack";
-import { useStore } from "./useStore";
+import { useStore } from "./store/useStore";
 
 const tabTitles: Record<TabKey, { title: string; subtitle: string }> = {
   dashboard: {
@@ -37,7 +37,8 @@ const App = () => {
   const inventory = useStore((state) => state.inventory);
   const activity = useStore((state) => state.activity);
   const syncStatus = useStore((state) => state.syncStatus);
-  const initializeInventory = useStore((state) => state.initializeInventory);
+  const isLoading = useStore((state) => state.isLoading);
+  const initializeStore = useStore((state) => state.initializeStore);
 
   const header = tabTitles[activeTab];
   const totalValue = useMemo(
@@ -50,8 +51,8 @@ const App = () => {
   );
 
   useEffect(() => {
-    void initializeInventory();
-  }, [initializeInventory]);
+    void initializeStore();
+  }, [initializeStore]);
 
   const fullReportRef = useRef<HTMLDivElement | null>(null);
   const lowReportRef = useRef<HTMLDivElement | null>(null);
@@ -103,12 +104,23 @@ const App = () => {
           </div>
         </header>
 
-        {activeTab === "dashboard" && (
-          <Dashboard items={inventory} activity={activity} />
+        {isLoading ? (
+          <div className="flex min-h-[50vh] items-center justify-center rounded-2xl border border-white/40 bg-white/80 p-6 shadow-sm backdrop-blur-md">
+            <div className="flex items-center gap-3 text-sm font-semibold text-slate-500">
+              <Loader2 className="h-5 w-5 animate-spin text-brand-primary" />
+              Loading inventory from Supabase...
+            </div>
+          </div>
+        ) : (
+          <>
+            {activeTab === "dashboard" && (
+              <Dashboard items={inventory} activity={activity} />
+            )}
+            {activeTab === "inventory" && <InventoryTable />}
+            {activeTab === "scanner" && <InvoiceScanner />}
+            {activeTab === "orders" && <OrdersPanel />}
+          </>
         )}
-        {activeTab === "inventory" && <InventoryTable />}
-        {activeTab === "scanner" && <InvoiceScanner />}
-        {activeTab === "orders" && <OrdersPanel />}
       </main>
 
       {showReport && (

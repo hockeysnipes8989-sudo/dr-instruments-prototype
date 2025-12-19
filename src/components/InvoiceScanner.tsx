@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FileUp } from "lucide-react";
 import { ScannedItem } from "../types";
-import { useStore } from "../useStore";
+import { useStore } from "../store/useStore";
 
 const mockScanResults: ScannedItem[] = [
   { name: "Borosilicate Beaker Set (500ml)", quantity: 12, confidence: 0.92 },

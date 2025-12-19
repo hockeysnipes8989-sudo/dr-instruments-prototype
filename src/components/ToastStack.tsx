@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useStore } from "../useStore";
+import { useStore } from "../store/useStore";
 
 const ToastStack = () => {
   const toasts = useStore((state) => state.toasts);
@@ -31,7 +31,11 @@ const ToastStack = () => {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className="rounded-xl border border-emerald-200 bg-emerald-500/90 px-4 py-3 text-sm font-semibold text-white shadow-lg backdrop-blur-md"
+          className={`rounded-xl border px-4 py-3 text-sm font-semibold text-white shadow-lg backdrop-blur-md ${
+            toast.variant === "error"
+              ? "border-rose-200 bg-rose-500/90"
+              : "border-emerald-200 bg-emerald-500/90"
+          }`}
         >
           {toast.message}
         </div>

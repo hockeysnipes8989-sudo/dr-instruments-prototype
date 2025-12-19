@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, ShoppingCart } from "lucide-react";
-import { useStore } from "../useStore";
+import { useStore } from "../store/useStore";
 
 const OrdersPanel = () => {
   const items = useStore((state) => state.inventory);

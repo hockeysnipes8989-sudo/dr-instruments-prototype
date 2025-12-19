@@ -11,14 +11,14 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 The app expects a Supabase table named `inventory` with these columns:
 
-- `sku` (text, primary key)
+- `id` (uuid or serial primary key)
+- `sku` (text, unique)
 - `name` (text)
 - `category` (text)
 - `quantity` (numeric)
 - `price` (numeric)
-- `value` (numeric)
 - `location` (text)
-- `minStockThreshold` (numeric)
+- `min_stock_threshold` (numeric)
 
 To seed the table with mock data, import and run `seedInventory` from
-`src/seedSupabase.ts` in a script or temporary UI action.
+`src/seedSupabase.ts`.
