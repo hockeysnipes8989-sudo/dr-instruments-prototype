@@ -16,7 +16,7 @@ const formatCurrency = (value: number) =>
 const Dashboard = ({ items, activity }: DashboardProps) => {
   const totalStock = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalValue = items.reduce((sum, item) => sum + item.value, 0);
-  const lowStockCount = items.filter((item) => item.quantity <= 5).length;
+  const lowStockCount = items.filter((item) => item.quantity <= item.minStockThreshold).length;
   const recentActivity = activity.slice(0, 3);
 
   return (
@@ -37,7 +37,7 @@ const Dashboard = ({ items, activity }: DashboardProps) => {
         <div className="rounded-2xl border border-white/40 bg-white/80 p-6 shadow-sm backdrop-blur-md">
           <p className="text-sm text-slate-500">Low Stock Alerts</p>
           <p className="mt-2 text-3xl font-semibold text-brand-primary">{lowStockCount}</p>
-          <p className="mt-1 text-xs text-slate-400">Items at or below 5 units</p>
+          <p className="mt-1 text-xs text-slate-400">Items at or below threshold</p>
         </div>
         <div className="rounded-2xl border border-white/40 bg-white/80 p-6 shadow-sm backdrop-blur-md">
           <p className="text-sm text-slate-500">Recent Activity</p>

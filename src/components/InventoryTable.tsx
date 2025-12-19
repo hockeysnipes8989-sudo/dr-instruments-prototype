@@ -18,18 +18,19 @@ const InventoryTable = () => {
     }
 
     return items.filter((item) =>
-      [item.sku, item.name, item.category].some((field) =>
+      [item.sku, item.name, item.category, item.location].some((field) =>
         field.toLowerCase().includes(normalized)
       )
     );
   }, [items, query]);
 
   const handleExport = () => {
-    const header = ["SKU", "Name", "Category", "Quantity", "Price", "Value"];
+    const header = ["SKU", "Name", "Category", "Location", "Quantity", "Price", "Value"];
     const rows = filteredItems.map((item) => [
       item.sku,
       item.name,
       item.category,
+      item.location,
       item.quantity,
       item.price,
       item.value
@@ -81,6 +82,7 @@ const InventoryTable = () => {
                 <p className="text-sm font-semibold text-slate-800">{item.name}</p>
                 <p className="text-xs text-slate-500">SKU: {item.sku}</p>
                 <p className="text-xs text-slate-500">Category: {item.category}</p>
+                <p className="text-xs text-slate-500">Location: {item.location}</p>
               </div>
               <div className="text-right">
                 <p className="text-xs text-slate-400">Value</p>
@@ -93,7 +95,7 @@ const InventoryTable = () => {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => decrementStock(item.sku)}
+                  onClick={() => void decrementStock(item.sku)}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-brand-primary hover:text-brand-primary active:scale-95"
                   aria-label={`Decrease ${item.name} quantity`}
                 >
@@ -102,7 +104,7 @@ const InventoryTable = () => {
                 <span className="text-sm font-semibold text-slate-700">{item.quantity}</span>
                 <button
                   type="button"
-                  onClick={() => incrementStock(item.sku)}
+                  onClick={() => void incrementStock(item.sku)}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-brand-primary hover:text-brand-primary active:scale-95"
                   aria-label={`Increase ${item.name} quantity`}
                 >
@@ -113,6 +115,9 @@ const InventoryTable = () => {
                 <p>Price</p>
                 <p className="font-semibold text-slate-700">{formatCurrency(item.price)}</p>
               </div>
+            </div>
+            <div className="mt-3 text-xs text-slate-500">
+              Min stock alert at {item.minStockThreshold} units.
             </div>
           </div>
         ))}
@@ -128,6 +133,7 @@ const InventoryTable = () => {
               <th className="px-3 py-2">SKU</th>
               <th className="px-3 py-2">Item</th>
               <th className="px-3 py-2">Category</th>
+              <th className="px-3 py-2">Location</th>
               <th className="px-3 py-2 text-right">Quantity</th>
               <th className="px-3 py-2 text-right">Price</th>
               <th className="px-3 py-2 text-right">Value</th>
@@ -139,11 +145,12 @@ const InventoryTable = () => {
                 <td className="px-3 py-3 font-medium text-slate-700">{item.sku}</td>
                 <td className="px-3 py-3 text-slate-600">{item.name}</td>
                 <td className="px-3 py-3 text-slate-500">{item.category}</td>
+                <td className="px-3 py-3 text-slate-500">{item.location}</td>
                 <td className="px-3 py-3">
                   <div className="flex items-center justify-end gap-2">
                     <button
                       type="button"
-                      onClick={() => decrementStock(item.sku)}
+                      onClick={() => void decrementStock(item.sku)}
                       className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-brand-primary hover:text-brand-primary active:scale-95"
                       aria-label={`Decrease ${item.name} quantity`}
                     >
@@ -154,7 +161,7 @@ const InventoryTable = () => {
                     </span>
                     <button
                       type="button"
-                      onClick={() => incrementStock(item.sku)}
+                      onClick={() => void incrementStock(item.sku)}
                       className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-brand-primary hover:text-brand-primary active:scale-95"
                       aria-label={`Increase ${item.name} quantity`}
                     >

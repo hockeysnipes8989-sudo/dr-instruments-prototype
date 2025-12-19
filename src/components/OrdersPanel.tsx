@@ -38,7 +38,7 @@ const OrdersPanel = () => {
       return;
     }
     setError("");
-    finalizeOrder();
+    void finalizeOrder();
     setShowSuccess(true);
   };
 

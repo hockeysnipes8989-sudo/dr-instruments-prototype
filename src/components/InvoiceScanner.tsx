@@ -69,7 +69,7 @@ const InvoiceScanner = () => {
   };
 
   const handleApplyUpdates = () => {
-    applyScannerUpdates();
+    void applyScannerUpdates();
     setStep("upload");
   };
 

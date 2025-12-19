@@ -5,6 +5,8 @@ export type InventoryItem = {
   quantity: number;
   price: number;
   value: number;
+  location: string;
+  minStockThreshold: number;
 };
 
 export type ScannedItem = {
