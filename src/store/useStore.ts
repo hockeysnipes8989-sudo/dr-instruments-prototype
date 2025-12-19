@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { supabase } from "../lib/supabase";
+import { hasSupabaseEnv, supabase } from "../lib/supabase";
 import { CartItem, InventoryItem, ScannedItem } from "../types";
 
 type ActivityEntry = {
@@ -36,13 +36,13 @@ type StoreState = {
 };
 
 type InventoryRow = {
-  sku: string;
-  name: string;
-  category: string;
-  quantity: number;
-  price: number;
-  location: string;
-  min_stock_threshold: number;
+  sku?: string | null;
+  name?: string | null;
+  category?: string | null;
+  quantity?: number | null;
+  price?: number | null;
+  location?: string | null;
+  min_stock_threshold?: number | null;
 };
 
 const nowLabel = () =>
@@ -61,17 +61,17 @@ const withValue = (item: InventoryItem): InventoryItem => ({
 
 const mapRowToItem = (row: InventoryRow): InventoryItem =>
   withValue({
-    sku: row.sku,
-    name: row.name,
-    category: row.category,
-    quantity: row.quantity,
-    price: row.price,
-    location: row.location,
-    minStockThreshold: row.min_stock_threshold,
-    value: row.quantity * row.price
+    sku: row.sku ?? "UNKNOWN",
+    name: row.name ?? "Unnamed Item",
+    category: row.category ?? "Uncategorized",
+    quantity: row.quantity ?? 0,
+    price: row.price ?? 0,
+    location: row.location ?? "Unassigned",
+    minStockThreshold: row.min_stock_threshold ?? 5,
+    value: (row.quantity ?? 0) * (row.price ?? 0)
   });
 
-const mapItemToRow = (item: InventoryItem): InventoryRow => ({
+const mapItemToRow = (item: InventoryItem) => ({
   sku: item.sku,
   name: item.name,
   category: item.category,
@@ -88,40 +88,54 @@ const buildNewSku = (name: string) =>
     .replace(/(^-|-$)/g, "")
     .slice(0, 12)}`;
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const addConnectionErrorToast = (setState: (fn: (state: StoreState) => StoreState) => void) => {
+  setState((state) => ({
+    ...state,
+    toasts: [...state.toasts, createToast("Database Connection Failed", "error")]
+  }));
+};
+
 export const useStore = create<StoreState>((set, get) => ({
   inventory: [],
   cart: [],
   scannerResults: [],
-  activity: [
-    { message: "Awaiting inventory sync.", timestamp: nowLabel() }
-  ],
+  activity: [{ message: "Awaiting inventory sync.", timestamp: nowLabel() }],
   toasts: [],
   syncStatus: "idle",
   isLoading: true,
   initializeStore: async () => {
     set({ isLoading: true, syncStatus: "syncing" });
-    const { data, error } = await supabase
-      .from("inventory")
-      .select("sku,name,category,quantity,price,location,min_stock_threshold")
-      .order("name");
-    if (error) {
-      set((state) => ({
-        isLoading: false,
-        syncStatus: "error",
-        toasts: [...state.toasts, createToast("Failed to load inventory.", "error")]
-      }));
+    if (!hasSupabaseEnv) {
+      addConnectionErrorToast(set);
+      set({ isLoading: false, syncStatus: "error" });
       return;
     }
-    const inventory = (data ?? []).map((row) => mapRowToItem(row as InventoryRow));
-    set({
-      inventory,
-      isLoading: false,
-      syncStatus: "synced",
-      activity: [
-        { message: "Inventory synced from Supabase.", timestamp: nowLabel() },
-        ...get().activity
-      ]
-    });
+    try {
+      const { data, error } = await supabase
+        .from("inventory")
+        .select("sku,name,category,quantity,price,location,min_stock_threshold")
+        .order("name");
+      if (error) {
+        addConnectionErrorToast(set);
+        set({ isLoading: false, syncStatus: "error" });
+        return;
+      }
+      const inventory = (data ?? []).map((row) => mapRowToItem(row as InventoryRow));
+      set({
+        inventory,
+        isLoading: false,
+        syncStatus: "synced",
+        activity: [
+          { message: "Inventory synced from Supabase.", timestamp: nowLabel() },
+          ...get().activity
+        ]
+      });
+    } catch {
+      addConnectionErrorToast(set);
+      set({ isLoading: false, syncStatus: "error" });
+    }
   },
   incrementStock: async (sku) => {
     const state = get();
@@ -135,25 +149,31 @@ export const useStore = create<StoreState>((set, get) => ({
       activity: item
         ? [{ message: `Added 1 unit to ${item.name}.`, timestamp: nowLabel() }, ...state.activity]
         : state.activity,
-      toasts: item ? [...state.toasts, createToast(`${item.name} inventory increased.`, "success")] : state.toasts,
+      toasts: item
+        ? [...state.toasts, createToast(`${item.name} inventory increased.`, "success")]
+        : state.toasts,
       syncStatus: "syncing"
     });
     if (!item) {
       return;
     }
-    const { error } = await supabase
-      .from("inventory")
-      .update({ quantity: item.quantity })
-      .eq("sku", sku);
-    if (error) {
+    try {
+      await delay(300);
+      const { error } = await supabase
+        .from("inventory")
+        .update({ quantity: item.quantity })
+        .eq("sku", sku);
+      if (error) {
+        throw error;
+      }
+      set({ syncStatus: "synced" });
+    } catch {
       set((current) => ({
         inventory: previous,
         syncStatus: "error",
         toasts: [...current.toasts, createToast("Failed to update inventory.", "error")]
       }));
-      return;
     }
-    set({ syncStatus: "synced" });
   },
   decrementStock: async (sku) => {
     const state = get();
@@ -169,25 +189,31 @@ export const useStore = create<StoreState>((set, get) => ({
       activity: item
         ? [{ message: `Removed 1 unit from ${item.name}.`, timestamp: nowLabel() }, ...state.activity]
         : state.activity,
-      toasts: item ? [...state.toasts, createToast(`${item.name} inventory decreased.`, "success")] : state.toasts,
+      toasts: item
+        ? [...state.toasts, createToast(`${item.name} inventory decreased.`, "success")]
+        : state.toasts,
       syncStatus: "syncing"
     });
     if (!item) {
       return;
     }
-    const { error } = await supabase
-      .from("inventory")
-      .update({ quantity: item.quantity })
-      .eq("sku", sku);
-    if (error) {
+    try {
+      await delay(300);
+      const { error } = await supabase
+        .from("inventory")
+        .update({ quantity: item.quantity })
+        .eq("sku", sku);
+      if (error) {
+        throw error;
+      }
+      set({ syncStatus: "synced" });
+    } catch {
       set((current) => ({
         inventory: previous,
         syncStatus: "error",
         toasts: [...current.toasts, createToast("Failed to update inventory.", "error")]
       }));
-      return;
     }
-    set({ syncStatus: "synced" });
   },
   addToOrder: (sku) => {
     set((state) => {
@@ -206,7 +232,7 @@ export const useStore = create<StoreState>((set, get) => ({
           )
         : [...state.cart, { sku, name: item.name, quantity: 1 }];
       const toasts = [...state.toasts, createToast(`${item.name} added to order.`, "success")];
-      return { cart, toasts };
+      return { ...state, cart, toasts };
     });
   },
   updateOrderQuantity: (sku, quantity) => {
@@ -219,7 +245,7 @@ export const useStore = create<StoreState>((set, get) => ({
       const cart = state.cart
         .map((entry) => (entry.sku === sku ? { ...entry, quantity: nextQuantity } : entry))
         .filter((entry) => entry.quantity > 0);
-      return { cart };
+      return { ...state, cart };
     });
   },
   finalizeOrder: async () => {
@@ -246,17 +272,21 @@ export const useStore = create<StoreState>((set, get) => ({
       syncStatus: "syncing"
     });
 
-    const updates = inventory.map((item) => ({ sku: item.sku, quantity: item.quantity }));
-    const { error } = await supabase.from("inventory").upsert(updates, { onConflict: "sku" });
-    if (error) {
+    try {
+      await delay(500);
+      const updates = inventory.map((item) => ({ sku: item.sku, quantity: item.quantity }));
+      const { error } = await supabase.from("inventory").upsert(updates, { onConflict: "sku" });
+      if (error) {
+        throw error;
+      }
+      set({ syncStatus: "synced" });
+    } catch {
       set((current) => ({
         inventory: previous,
         syncStatus: "error",
         toasts: [...current.toasts, createToast("Failed to finalize order.", "error")]
       }));
-      return;
     }
-    set({ syncStatus: "synced" });
   },
   setScannerResults: (results) => set({ scannerResults: results }),
   applyScannerUpdates: async () => {
@@ -304,20 +334,24 @@ export const useStore = create<StoreState>((set, get) => ({
       syncStatus: "syncing"
     });
 
-    const rows = [...updates, ...newItems].map((item) => mapItemToRow(item));
-    const { error } = await supabase.from("inventory").upsert(rows, { onConflict: "sku" });
-    if (error) {
+    try {
+      await delay(500);
+      const rows = [...updates, ...newItems].map((item) => mapItemToRow(item));
+      const { error } = await supabase.from("inventory").upsert(rows, { onConflict: "sku" });
+      if (error) {
+        throw error;
+      }
+      set({ syncStatus: "synced" });
+    } catch {
       set((current) => ({
         inventory: previous,
         syncStatus: "error",
         toasts: [...current.toasts, createToast("Failed to apply scanner updates.", "error")]
       }));
-      return;
     }
-    set({ syncStatus: "synced" });
   },
   addToast: (message, variant) =>
-    set((state) => ({ toasts: [...state.toasts, createToast(message, variant)] })),
+    set((state) => ({ ...state, toasts: [...state.toasts, createToast(message, variant)] })),
   removeToast: (id) =>
-    set((state) => ({ toasts: state.toasts.filter((toast) => toast.id !== id) }))
+    set((state) => ({ ...state, toasts: state.toasts.filter((toast) => toast.id !== id) }))
 }));
