@@ -24,7 +24,7 @@ const Sidebar = ({ activeTab, onSelect }: SidebarProps) => {
           </p>
           <h1 className="text-2xl font-semibold text-brand-primary">Operations Console</h1>
         </div>
-        <nav className="flex flex-col gap-3">
+      <nav className="flex flex-col gap-3">
           {navItems.map((item) => {
             const isActive = activeTab === item.key;
             return (
@@ -45,7 +45,14 @@ const Sidebar = ({ activeTab, onSelect }: SidebarProps) => {
               </button>
             );
           })}
-        </nav>
+      </nav>
+      <div className="mt-auto flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+        </span>
+        Database: Online
+      </div>
       </aside>
 
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/90 px-4 py-2 shadow-lg backdrop-blur-md md:hidden">

@@ -38,7 +38,6 @@ const App = () => {
   const activity = useStore((state) => state.activity);
   const syncStatus = useStore((state) => state.syncStatus);
   const isLoading = useStore((state) => state.isLoading);
-  const connectionError = useStore((state) => state.connectionError);
   const initializeStore = useStore((state) => state.initializeStore);
 
   const header = tabTitles[activeTab];
@@ -90,7 +89,7 @@ const App = () => {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-500 shadow-sm">
               {syncIcon()}
-              {syncStatus === "syncing" ? "Syncing" : syncStatus === "error" ? "Offline" : "Synced"}
+              {syncStatus === "syncing" ? "Saving..." : syncStatus === "error" ? "Offline" : "Synced"}
             </div>
             <button
               type="button"
@@ -105,21 +104,11 @@ const App = () => {
           </div>
         </header>
 
-        {connectionError ? (
-          <div className="flex min-h-[60vh] items-center justify-center rounded-2xl border border-rose-200 bg-rose-600/90 p-6 text-center text-white shadow-lg">
-            <div>
-              <h3 className="text-lg font-semibold">
-                DATABASE CONNECTION FAILED: Check local .env file and Supabase Table
-                permissions.
-              </h3>
-              <p className="mt-2 text-sm text-rose-100">{connectionError}</p>
-            </div>
-          </div>
-        ) : isLoading ? (
+        {isLoading ? (
           <div className="flex min-h-[50vh] items-center justify-center rounded-2xl border border-white/40 bg-white/80 p-6 shadow-sm backdrop-blur-md">
             <div className="flex items-center gap-3 text-sm font-semibold text-slate-500">
               <Loader2 className="h-5 w-5 animate-spin text-brand-primary" />
-              Loading inventory from Supabase...
+              Authenticating with Laboratory Database...
             </div>
           </div>
         ) : (

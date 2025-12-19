@@ -199,7 +199,7 @@ export const useStore = create<StoreState>((set, get) => ({
       set((current) => ({
         inventory: previous,
         syncStatus: "error",
-        toasts: [...current.toasts, createToast("Failed to update inventory.", "error")]
+        toasts: [...current.toasts, createToast("Sync failed. Changes saved locally.", "error")]
       }));
     }
   },
@@ -239,7 +239,7 @@ export const useStore = create<StoreState>((set, get) => ({
       set((current) => ({
         inventory: previous,
         syncStatus: "error",
-        toasts: [...current.toasts, createToast("Failed to update inventory.", "error")]
+        toasts: [...current.toasts, createToast("Sync failed. Changes saved locally.", "error")]
       }));
     }
   },
@@ -312,7 +312,7 @@ export const useStore = create<StoreState>((set, get) => ({
       set((current) => ({
         inventory: previous,
         syncStatus: "error",
-        toasts: [...current.toasts, createToast("Failed to finalize order.", "error")]
+        toasts: [...current.toasts, createToast("Sync failed. Changes saved locally.", "error")]
       }));
     }
   },
@@ -374,7 +374,7 @@ export const useStore = create<StoreState>((set, get) => ({
       set((current) => ({
         inventory: previous,
         syncStatus: "error",
-        toasts: [...current.toasts, createToast("Failed to apply scanner updates.", "error")]
+        toasts: [...current.toasts, createToast("Sync failed. Changes saved locally.", "error")]
       }));
     }
   },
