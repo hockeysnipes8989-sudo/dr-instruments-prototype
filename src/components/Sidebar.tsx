@@ -46,12 +46,6 @@ const Sidebar = ({ activeTab, onSelect }: SidebarProps) => {
             );
           })}
         </nav>
-        <div className="mt-auto rounded-xl bg-blue-50 p-4 text-sm text-slate-600">
-          <p className="font-semibold text-brand-primary">Mock Environment</p>
-          <p className="mt-2">
-            All data shown here is simulated for demonstration and training.
-          </p>
-        </div>
       </aside>
 
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/90 px-4 py-2 shadow-lg backdrop-blur-md md:hidden">

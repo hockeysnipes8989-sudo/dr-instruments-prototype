@@ -23,6 +23,7 @@ type StoreState = {
   toasts: Toast[];
   syncStatus: SyncStatus;
   isLoading: boolean;
+  connectionError: string | null;
   initializeStore: () => Promise<void>;
   incrementStock: (sku: string) => Promise<void>;
   decrementStock: (sku: string) => Promise<void>;
@@ -105,21 +106,43 @@ export const useStore = create<StoreState>((set, get) => ({
   toasts: [],
   syncStatus: "idle",
   isLoading: true,
+  connectionError: null,
   initializeStore: async () => {
     set({ isLoading: true, syncStatus: "syncing" });
     if (!hasSupabaseEnv) {
       addConnectionErrorToast(set);
-      set({ isLoading: false, syncStatus: "error" });
+      set({
+        isLoading: false,
+        syncStatus: "error",
+        connectionError: "Missing Supabase environment variables."
+      });
       return;
     }
     try {
+      const { error: healthError } = await supabase
+        .from("inventory")
+        .select("sku")
+        .limit(1);
+      if (healthError) {
+        addConnectionErrorToast(set);
+        set({
+          isLoading: false,
+          syncStatus: "error",
+          connectionError: healthError.message
+        });
+        return;
+      }
       const { data, error } = await supabase
         .from("inventory")
         .select("sku,name,category,quantity,price,location,min_stock_threshold")
         .order("name");
       if (error) {
         addConnectionErrorToast(set);
-        set({ isLoading: false, syncStatus: "error" });
+        set({
+          isLoading: false,
+          syncStatus: "error",
+          connectionError: error.message
+        });
         return;
       }
       const inventory = (data ?? []).map((row) => mapRowToItem(row as InventoryRow));
@@ -127,14 +150,19 @@ export const useStore = create<StoreState>((set, get) => ({
         inventory,
         isLoading: false,
         syncStatus: "synced",
+        connectionError: null,
         activity: [
           { message: "Inventory synced from Supabase.", timestamp: nowLabel() },
           ...get().activity
         ]
       });
-    } catch {
+    } catch (error) {
       addConnectionErrorToast(set);
-      set({ isLoading: false, syncStatus: "error" });
+      set({
+        isLoading: false,
+        syncStatus: "error",
+        connectionError: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   },
   incrementStock: async (sku) => {
