@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Cloud, CloudCheck, CloudOff, Loader2 } from "lucide-react";
+import { CheckCircle, Cloud, CloudOff, Loader2 } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 import Sidebar, { TabKey } from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
@@ -74,7 +74,7 @@ const App = () => {
     if (syncStatus === "error") {
       return <CloudOff className="h-4 w-4 text-rose-500" />;
     }
-    return <CloudCheck className="h-4 w-4 text-emerald-500" />;
+    return <CheckCircle className="h-4 w-4 text-emerald-500" />;
   };
 
   return (
