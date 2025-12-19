@@ -4,7 +4,10 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        "brand-rose": "#E11D48"
+        brand: {
+          primary: "#1E3A8A",
+          secondary: "#10B981"
+        }
       }
     }
   },

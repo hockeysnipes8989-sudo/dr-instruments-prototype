@@ -47,17 +47,17 @@ const InventoryTable = () => {
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="rounded-2xl border border-white/40 bg-white/80 p-6 shadow-sm backdrop-blur-md">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-blue-900">Inventory</h2>
+          <h2 className="text-lg font-semibold text-brand-primary">Inventory</h2>
           <p className="text-sm text-slate-500">
             Searchable list of available lab equipment
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <input
-            className="h-10 rounded-xl border border-slate-200 bg-white px-4 text-sm focus:border-blue-900 focus:outline-none"
+            className="h-10 rounded-xl border border-slate-200 bg-white/80 px-4 text-sm focus:border-brand-primary focus:outline-none"
             placeholder="Search inventory"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -65,14 +65,63 @@ const InventoryTable = () => {
           <button
             type="button"
             onClick={handleExport}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-500 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-600"
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-brand-secondary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 active:scale-95"
           >
             <Download className="h-4 w-4" />
             Export CSV
           </button>
         </div>
       </div>
-      <div className="mt-6 overflow-x-auto">
+
+      <div className="mt-6 space-y-4 md:hidden">
+        {filteredItems.map((item) => (
+          <div key={item.sku} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-800">{item.name}</p>
+                <p className="text-xs text-slate-500">SKU: {item.sku}</p>
+                <p className="text-xs text-slate-500">Category: {item.category}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-slate-400">Value</p>
+                <p className="text-sm font-semibold text-slate-700">
+                  {formatCurrency(item.value)}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => decrementStock(item.sku)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-brand-primary hover:text-brand-primary active:scale-95"
+                  aria-label={`Decrease ${item.name} quantity`}
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+                <span className="text-sm font-semibold text-slate-700">{item.quantity}</span>
+                <button
+                  type="button"
+                  onClick={() => incrementStock(item.sku)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-brand-primary hover:text-brand-primary active:scale-95"
+                  aria-label={`Increase ${item.name} quantity`}
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="text-right text-xs text-slate-500">
+                <p>Price</p>
+                <p className="font-semibold text-slate-700">{formatCurrency(item.price)}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+        {filteredItems.length === 0 && (
+          <p className="text-sm text-slate-500">No items match your search.</p>
+        )}
+      </div>
+
+      <div className="mt-6 hidden overflow-x-auto md:block">
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-slate-200 text-xs uppercase text-slate-400">
             <tr>
@@ -95,7 +144,7 @@ const InventoryTable = () => {
                     <button
                       type="button"
                       onClick={() => decrementStock(item.sku)}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-blue-900 hover:text-blue-900"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-brand-primary hover:text-brand-primary active:scale-95"
                       aria-label={`Decrease ${item.name} quantity`}
                     >
                       <Minus className="h-3 w-3" />
@@ -106,7 +155,7 @@ const InventoryTable = () => {
                     <button
                       type="button"
                       onClick={() => incrementStock(item.sku)}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-blue-900 hover:text-blue-900"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-brand-primary hover:text-brand-primary active:scale-95"
                       aria-label={`Increase ${item.name} quantity`}
                     >
                       <Plus className="h-3 w-3" />

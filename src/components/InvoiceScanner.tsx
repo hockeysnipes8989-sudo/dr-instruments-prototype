@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FileUp } from "lucide-react";
 import { ScannedItem } from "../types";
 import { useStore } from "../useStore";
@@ -17,6 +17,7 @@ const InvoiceScanner = () => {
   const results = useStore((state) => state.scannerResults);
   const setScannerResults = useStore((state) => state.setScannerResults);
   const applyScannerUpdates = useStore((state) => state.applyScannerUpdates);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (step !== "analysis") {
@@ -41,20 +42,30 @@ const InvoiceScanner = () => {
     };
   }, [setScannerResults, step]);
 
+  const startAnalysis = () => {
+    setScannerResults([]);
+    setStep("analysis");
+  };
+
   const handleDrop = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
       if (step === "analysis") {
         return;
       }
-      setScannerResults([]);
-      setStep("analysis");
+      startAnalysis();
     },
-    [setScannerResults, step]
+    [step]
   );
 
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      startAnalysis();
+    }
   };
 
   const handleApplyUpdates = () => {
@@ -63,54 +74,80 @@ const InvoiceScanner = () => {
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="rounded-2xl border border-white/40 bg-white/80 p-6 shadow-sm backdrop-blur-md">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-blue-900">Mock Invoice Scanner</h2>
+          <h2 className="text-lg font-semibold text-brand-primary">Mock Invoice Scanner</h2>
           <p className="text-sm text-slate-500">
             Simulate AI extraction with a three-step review flow.
           </p>
         </div>
-        <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-900">
+        <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-brand-primary">
           AI Simulated
         </span>
       </div>
 
       <div className="mt-6 flex items-center gap-3 text-xs font-medium text-slate-400">
-        <span className={step === "upload" ? "text-blue-900" : ""}>Upload</span>
+        <span className={step === "upload" ? "text-brand-primary" : ""}>Upload</span>
         <span className="h-px w-6 bg-slate-200" />
-        <span className={step === "analysis" ? "text-blue-900" : ""}>Analysis</span>
+        <span className={step === "analysis" ? "text-brand-primary" : ""}>Analysis</span>
         <span className="h-px w-6 bg-slate-200" />
-        <span className={step === "review" ? "text-blue-900" : ""}>Review</span>
+        <span className={step === "review" ? "text-brand-primary" : ""}>Review</span>
       </div>
 
       {step === "upload" && (
         <div
-          className="mt-6 flex min-h-[180px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 text-center"
+          className="mt-6 flex min-h-[200px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 text-center"
           onDrop={handleDrop}
           onDragOver={handleDragOver}
         >
-          <FileUp className="h-8 w-8 text-blue-900" />
+          <FileUp className="h-8 w-8 text-brand-primary" />
           <p className="mt-3 text-sm font-medium text-slate-700">
             Drag & drop invoice images here
           </p>
           <p className="text-xs text-slate-400">
             JPG or PNG. No data is uploaded in mock mode.
           </p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="mt-4 rounded-xl bg-brand-secondary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 active:scale-95"
+          >
+            Select File
+          </button>
         </div>
       )}
 
       {step === "analysis" && (
         <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-6">
-          <p className="text-sm font-semibold text-blue-900">Analyzing invoice...</p>
-          <p className="mt-1 text-xs text-slate-500">
-            Multimodal extraction in progress (simulated 2.5s).
-          </p>
-          <div className="mt-4 h-2 w-full rounded-full bg-slate-200">
-            <div
-              className="h-2 rounded-full bg-blue-900 transition-all duration-200"
-              style={{ width: `${progress}%` }}
-            />
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center">
+            <div className="relative flex h-20 w-20 items-center justify-center">
+              <div className="absolute h-20 w-20 rounded-full border-4 border-brand-primary/20" />
+              <div className="absolute h-20 w-20 rounded-full border-4 border-transparent border-t-brand-primary animate-spin" />
+              <div className="absolute h-16 w-16 rounded-full bg-white/80 shadow-sm backdrop-blur-md animate-pulse" />
+              <span className="relative text-sm font-semibold text-brand-primary">
+                {progress}%
+              </span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-brand-primary">Analyzing invoice...</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Multimodal extraction in progress (simulated 2.5s).
+              </p>
+              <div className="mt-3 h-2 w-full rounded-full bg-slate-200">
+                <div
+                  className="h-2 rounded-full bg-brand-primary transition-all duration-200"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -147,7 +184,7 @@ const InvoiceScanner = () => {
             <button
               type="button"
               onClick={handleApplyUpdates}
-              className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-600"
+              className="rounded-xl bg-brand-secondary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 active:scale-95"
             >
               Update Inventory
             </button>

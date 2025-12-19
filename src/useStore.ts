@@ -7,11 +7,17 @@ type ActivityEntry = {
   timestamp: string;
 };
 
+type Toast = {
+  id: string;
+  message: string;
+};
+
 type StoreState = {
   inventory: InventoryItem[];
   cart: CartItem[];
   scannerResults: ScannedItem[];
   activity: ActivityEntry[];
+  toasts: Toast[];
   incrementStock: (sku: string) => void;
   decrementStock: (sku: string) => void;
   addToOrder: (sku: string) => void;
@@ -19,9 +25,17 @@ type StoreState = {
   finalizeOrder: () => void;
   setScannerResults: (results: ScannedItem[]) => void;
   applyScannerUpdates: () => void;
+  addToast: (message: string) => void;
+  removeToast: (id: string) => void;
 };
 
-const nowLabel = () => new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+const nowLabel = () =>
+  new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+
+const createToast = (message: string): Toast => ({
+  id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  message
+});
 
 export const useStore = create<StoreState>((set, get) => ({
   inventory: mockInventory,
@@ -31,6 +45,7 @@ export const useStore = create<StoreState>((set, get) => ({
     { message: "Mock inventory initialized.", timestamp: nowLabel() },
     { message: "Last sync completed.", timestamp: nowLabel() }
   ],
+  toasts: [],
   incrementStock: (sku) => {
     set((state) => {
       const inventory = state.inventory.map((item) => {
@@ -44,7 +59,10 @@ export const useStore = create<StoreState>((set, get) => ({
       const activity = item
         ? [{ message: `Added 1 unit to ${item.name}.`, timestamp: nowLabel() }, ...state.activity]
         : state.activity;
-      return { inventory, activity };
+      const toasts = item
+        ? [...state.toasts, createToast(`${item.name} inventory increased.`)]
+        : state.toasts;
+      return { inventory, activity, toasts };
     });
   },
   decrementStock: (sku) => {
@@ -60,7 +78,10 @@ export const useStore = create<StoreState>((set, get) => ({
       const activity = item
         ? [{ message: `Removed 1 unit from ${item.name}.`, timestamp: nowLabel() }, ...state.activity]
         : state.activity;
-      return { inventory, activity };
+      const toasts = item
+        ? [...state.toasts, createToast(`${item.name} inventory decreased.`)]
+        : state.toasts;
+      return { inventory, activity, toasts };
     });
   },
   addToOrder: (sku) => {
@@ -79,7 +100,8 @@ export const useStore = create<StoreState>((set, get) => ({
             entry.sku === sku ? { ...entry, quantity: nextQuantity } : entry
           )
         : [...state.cart, { sku, name: item.name, quantity: 1 }];
-      return { cart };
+      const toasts = [...state.toasts, createToast(`${item.name} added to order.`)];
+      return { cart, toasts };
     });
   },
   updateOrderQuantity: (sku, quantity) => {
@@ -112,7 +134,8 @@ export const useStore = create<StoreState>((set, get) => ({
         { message: `Order finalized with ${state.cart.length} item(s).`, timestamp: nowLabel() },
         ...state.activity
       ];
-      return { inventory, cart: [], activity };
+      const toasts = [...state.toasts, createToast("Outgoing order finalized.")];
+      return { inventory, cart: [], activity, toasts };
     });
   },
   setScannerResults: (results) => set({ scannerResults: results }),
@@ -133,7 +156,11 @@ export const useStore = create<StoreState>((set, get) => ({
         { message: "Scanner updates applied to inventory.", timestamp: nowLabel() },
         ...state.activity
       ];
-      return { inventory, scannerResults: [], activity };
+      const toasts = [...state.toasts, createToast("Scanner updates applied.")];
+      return { inventory, scannerResults: [], activity, toasts };
     });
-  }
+  },
+  addToast: (message) => set((state) => ({ toasts: [...state.toasts, createToast(message)] })),
+  removeToast: (id) =>
+    set((state) => ({ toasts: state.toasts.filter((toast) => toast.id !== id) }))
 }));

@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { ShoppingCart } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, ShoppingCart } from "lucide-react";
 import { useStore } from "../useStore";
 
 const OrdersPanel = () => {
@@ -10,6 +10,7 @@ const OrdersPanel = () => {
   const finalizeOrder = useStore((state) => state.finalizeOrder);
   const [selectedSku, setSelectedSku] = useState(items[0]?.sku ?? "");
   const [error, setError] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const cartTotalItems = useMemo(
     () => cart.reduce((sum, item) => sum + item.quantity, 0),
@@ -38,17 +39,26 @@ const OrdersPanel = () => {
     }
     setError("");
     finalizeOrder();
+    setShowSuccess(true);
   };
 
+  useEffect(() => {
+    if (!showSuccess) {
+      return;
+    }
+    const timeout = window.setTimeout(() => setShowSuccess(false), 2000);
+    return () => window.clearTimeout(timeout);
+  }, [showSuccess]);
+
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="rounded-2xl border border-white/40 bg-white/80 p-6 shadow-sm backdrop-blur-md">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-blue-900">Outgoing Orders</h2>
+          <h2 className="text-lg font-semibold text-brand-primary">Outgoing Orders</h2>
           <p className="text-sm text-slate-500">Build and finalize outgoing orders</p>
         </div>
         <div className="flex items-center gap-2 text-sm text-slate-500">
-          <ShoppingCart className="h-4 w-4 text-emerald-500" />
+          <ShoppingCart className="h-4 w-4 text-brand-secondary" />
           {cartTotalItems} items
         </div>
       </div>
@@ -57,7 +67,7 @@ const OrdersPanel = () => {
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
             <select
-              className="h-10 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+              className="h-10 flex-1 rounded-xl border border-slate-200 bg-white/80 px-3 text-sm"
               value={selectedSku}
               onChange={(event) => {
                 setSelectedSku(event.target.value);
@@ -73,7 +83,8 @@ const OrdersPanel = () => {
             <button
               type="button"
               onClick={handleAdd}
-              className="h-10 rounded-xl bg-emerald-500 px-4 text-sm font-semibold text-white hover:bg-emerald-600"
+              disabled={availableQuantity <= 0}
+              className="h-10 rounded-xl bg-brand-secondary px-4 text-sm font-semibold text-white transition hover:bg-emerald-600 active:scale-95 disabled:cursor-not-allowed disabled:bg-emerald-200"
             >
               Add to order
             </button>
@@ -88,7 +99,7 @@ const OrdersPanel = () => {
               return (
                 <div
                   key={item.sku}
-                  className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 p-4"
+                  className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm"
                 >
                   <div>
                     <p className="text-sm font-semibold text-slate-800">{item.name}</p>
@@ -113,7 +124,7 @@ const OrdersPanel = () => {
             })}
           </div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 backdrop-blur-md">
           <p className="text-sm font-semibold text-slate-700">Order Summary</p>
           <p className="mt-2 text-xs text-slate-500">
             Confirm the outgoing order before deduction.
@@ -121,11 +132,17 @@ const OrdersPanel = () => {
           <button
             type="button"
             onClick={handleFinalize}
-            className="mt-6 w-full rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600"
+            className="mt-6 w-full rounded-xl bg-brand-secondary px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600 active:scale-95"
             disabled={cart.length === 0}
           >
             Finalize Order
           </button>
+          {showSuccess && (
+            <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 animate-pulse">
+              <CheckCircle2 className="h-4 w-4" />
+              Order finalized successfully.
+            </div>
+          )}
         </div>
       </div>
     </section>
