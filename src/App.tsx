@@ -33,14 +33,12 @@ const tabTitles: Record<TabKey, { title: string; subtitle: string }> = {
 
 type ReportTab = "full" | "low";
 
-type AuthStatus = "loading" | "unauthenticated" | "authenticated";
-
 const App = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
   const [showReport, setShowReport] = useState(false);
   const [reportTab, setReportTab] = useState<ReportTab>("full");
   const [session, setSession] = useState<Session | null>(null);
-  const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const inventory = useStore((state) => state.inventory);
   const activity = useStore((state) => state.activity);
   const syncStatus = useStore((state) => state.syncStatus);
@@ -60,23 +58,19 @@ const App = () => {
 
   useEffect(() => {
     const loadSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      if (error) {
-        setAuthStatus("unauthenticated");
-        setSession(null);
-        return;
-      }
+      const { data } = await supabase.auth.getSession();
       setSession(data.session);
-      setAuthStatus(data.session ? "authenticated" : "unauthenticated");
+      setIsAuthLoading(false);
     };
     void loadSession();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      setAuthStatus(newSession ? "authenticated" : "unauthenticated");
-      if (!newSession) {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, newSession) => {
+      if (event === "SIGNED_OUT") {
         resetStore();
+        setSession(null);
+        return;
       }
+      setSession(newSession);
     });
 
     return () => {
@@ -85,10 +79,10 @@ const App = () => {
   }, [resetStore]);
 
   useEffect(() => {
-    if (authStatus === "authenticated") {
+    if (session) {
       void initializeStore();
     }
-  }, [authStatus, initializeStore]);
+  }, [initializeStore, session]);
 
   const fullReportRef = useRef<HTMLDivElement | null>(null);
   const lowReportRef = useRef<HTMLDivElement | null>(null);
@@ -113,7 +107,7 @@ const App = () => {
     return <CheckCircle className="h-4 w-4 text-emerald-500" />;
   };
 
-  if (authStatus === "loading") {
+  if (isAuthLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-800">
         <div className="rounded-3xl border border-white/40 bg-white/80 px-8 py-6 shadow-xl backdrop-blur-md">
@@ -126,7 +120,7 @@ const App = () => {
     );
   }
 
-  if (authStatus === "unauthenticated") {
+  if (!session) {
     return <Auth />;
   }
 

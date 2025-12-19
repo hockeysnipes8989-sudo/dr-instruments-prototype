@@ -120,6 +120,15 @@ export const useStore = create<StoreState>((set, get) => ({
       return;
     }
     try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) {
+        set({
+          isLoading: false,
+          syncStatus: "error",
+          connectionError: "Unauthorized access. Please sign in."
+        });
+        return;
+      }
       const { error: healthError } = await supabase
         .from("inventory")
         .select("sku")
