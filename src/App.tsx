@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle, Cloud, CloudOff, Loader2 } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
+import { Session } from "@supabase/supabase-js";
 import Sidebar, { TabKey } from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
 import InventoryTable from "./components/InventoryTable";
 import InvoiceScanner from "./components/InvoiceScanner";
 import OrdersPanel from "./components/OrdersPanel";
 import ToastStack from "./components/ToastStack";
+import Auth from "./components/Auth";
 import { useStore } from "./store/useStore";
+import { supabase } from "./lib/supabase";
 
 const tabTitles: Record<TabKey, { title: string; subtitle: string }> = {
   dashboard: {
@@ -34,6 +37,7 @@ const App = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
   const [showReport, setShowReport] = useState(false);
   const [reportTab, setReportTab] = useState<ReportTab>("full");
+  const [session, setSession] = useState<Session | null>(null);
   const inventory = useStore((state) => state.inventory);
   const activity = useStore((state) => state.activity);
   const syncStatus = useStore((state) => state.syncStatus);
@@ -51,8 +55,26 @@ const App = () => {
   );
 
   useEffect(() => {
-    void initializeStore();
-  }, [initializeStore]);
+    const loadSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      setSession(data.session);
+    };
+    void loadSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (session) {
+      void initializeStore();
+    }
+  }, [initializeStore, session]);
 
   const fullReportRef = useRef<HTMLDivElement | null>(null);
   const lowReportRef = useRef<HTMLDivElement | null>(null);
@@ -77,9 +99,18 @@ const App = () => {
     return <CheckCircle className="h-4 w-4 text-emerald-500" />;
   };
 
+  if (!session) {
+    return <Auth />;
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800 md:flex-row">
-      <Sidebar activeTab={activeTab} onSelect={setActiveTab} />
+      <Sidebar
+        activeTab={activeTab}
+        onSelect={setActiveTab}
+        userEmail={session.user.email ?? ""}
+        onSignOut={() => void supabase.auth.signOut()}
+      />
       <main className="flex-1 space-y-8 px-6 pb-24 pt-8 md:px-8 md:pb-10">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
