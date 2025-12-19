@@ -1,62 +1,54 @@
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { InventoryItem } from "../types";
-
-type DashboardProps = {
-  items: InventoryItem[];
-};
 
 const formatCurrency = (value: number) =>
   value.toLocaleString("en-US", { style: "currency", currency: "USD" });
 
-const Dashboard = ({ items }: DashboardProps) => {
+type ActivityEntry = {
+  message: string;
+  timestamp: string;
+};
+
+type DashboardProps = {
+  items: InventoryItem[];
+  activity: ActivityEntry[];
+};
+
+const Dashboard = ({ items, activity }: DashboardProps) => {
   const totalStock = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalValue = items.reduce((sum, item) => sum + item.value, 0);
-  const valueByCategory = items.reduce<Record<string, number>>((acc, item) => {
-    acc[item.category] = (acc[item.category] ?? 0) + item.value;
-    return acc;
-  }, {});
-
-  const chartData = Object.entries(valueByCategory).map(([category, value]) => ({
-    category,
-    value
-  }));
+  const lowStockCount = items.filter((item) => item.quantity <= 5).length;
+  const recentActivity = activity.slice(0, 3);
 
   return (
     <section className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-4">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm text-slate-500">Total Stock</p>
-          <p className="mt-2 text-3xl font-semibold text-slate-800">{totalStock}</p>
+          <p className="mt-2 text-3xl font-semibold text-blue-900">{totalStock}</p>
           <p className="mt-1 text-xs text-slate-400">Units across all categories</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm text-slate-500">Total Inventory Value</p>
-          <p className="mt-2 text-3xl font-semibold text-slate-800">
+          <p className="mt-2 text-3xl font-semibold text-blue-900">
             {formatCurrency(totalValue)}
           </p>
-          <p className="mt-1 text-xs text-slate-400">Based on mock pricing</p>
+          <p className="mt-1 text-xs text-slate-400">Mock pricing in USD</p>
         </div>
-      </div>
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-800">Value by Category</h2>
-            <p className="text-sm text-slate-500">Aggregated inventory value</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-sm text-slate-500">Low Stock Alerts</p>
+          <p className="mt-2 text-3xl font-semibold text-blue-900">{lowStockCount}</p>
+          <p className="mt-1 text-xs text-slate-400">Items at or below 5 units</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-sm text-slate-500">Recent Activity</p>
+          <div className="mt-3 space-y-2 text-xs text-slate-500">
+            {recentActivity.map((entry, index) => (
+              <div key={`${entry.message}-${index}`}>
+                <p className="font-semibold text-slate-700">{entry.message}</p>
+                <p className="text-slate-400">{entry.timestamp}</p>
+              </div>
+            ))}
           </div>
-          <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-medium text-rose-600">
-            Mock Data
-          </span>
-        </div>
-        <div className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ left: 16, right: 16 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="category" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-              <Bar dataKey="value" fill="#E11D48" radius={[8, 8, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
         </div>
       </div>
     </section>
