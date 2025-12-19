@@ -25,6 +25,7 @@ type StoreState = {
   isLoading: boolean;
   connectionError: string | null;
   initializeStore: () => Promise<void>;
+  resetStore: () => void;
   incrementStock: (sku: string) => Promise<void>;
   decrementStock: (sku: string) => Promise<void>;
   addToOrder: (sku: string) => void;
@@ -164,6 +165,18 @@ export const useStore = create<StoreState>((set, get) => ({
         connectionError: error instanceof Error ? error.message : "Unknown error"
       });
     }
+  },
+  resetStore: () => {
+    set({
+      inventory: [],
+      cart: [],
+      scannerResults: [],
+      activity: [{ message: "Awaiting inventory sync.", timestamp: nowLabel() }],
+      toasts: [],
+      syncStatus: "idle",
+      isLoading: false,
+      connectionError: null
+    });
   },
   incrementStock: async (sku) => {
     const state = get();

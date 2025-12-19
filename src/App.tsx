@@ -33,16 +33,20 @@ const tabTitles: Record<TabKey, { title: string; subtitle: string }> = {
 
 type ReportTab = "full" | "low";
 
+type AuthStatus = "loading" | "unauthenticated" | "authenticated";
+
 const App = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
   const [showReport, setShowReport] = useState(false);
   const [reportTab, setReportTab] = useState<ReportTab>("full");
   const [session, setSession] = useState<Session | null>(null);
+  const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
   const inventory = useStore((state) => state.inventory);
   const activity = useStore((state) => state.activity);
   const syncStatus = useStore((state) => state.syncStatus);
   const isLoading = useStore((state) => state.isLoading);
   const initializeStore = useStore((state) => state.initializeStore);
+  const resetStore = useStore((state) => state.resetStore);
 
   const header = tabTitles[activeTab];
   const totalValue = useMemo(
@@ -56,25 +60,35 @@ const App = () => {
 
   useEffect(() => {
     const loadSession = async () => {
-      const { data } = await supabase.auth.getSession();
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        setAuthStatus("unauthenticated");
+        setSession(null);
+        return;
+      }
       setSession(data.session);
+      setAuthStatus(data.session ? "authenticated" : "unauthenticated");
     };
     void loadSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
+      setAuthStatus(newSession ? "authenticated" : "unauthenticated");
+      if (!newSession) {
+        resetStore();
+      }
     });
 
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [resetStore]);
 
   useEffect(() => {
-    if (session) {
+    if (authStatus === "authenticated") {
       void initializeStore();
     }
-  }, [initializeStore, session]);
+  }, [authStatus, initializeStore]);
 
   const fullReportRef = useRef<HTMLDivElement | null>(null);
   const lowReportRef = useRef<HTMLDivElement | null>(null);
@@ -99,7 +113,20 @@ const App = () => {
     return <CheckCircle className="h-4 w-4 text-emerald-500" />;
   };
 
-  if (!session) {
+  if (authStatus === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-800">
+        <div className="rounded-3xl border border-white/40 bg-white/80 px-8 py-6 shadow-xl backdrop-blur-md">
+          <div className="flex items-center gap-3 text-sm font-semibold text-slate-500">
+            <Loader2 className="h-5 w-5 animate-spin text-brand-primary" />
+            Authenticating with Laboratory Database...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (authStatus === "unauthenticated") {
     return <Auth />;
   }
 
@@ -108,7 +135,7 @@ const App = () => {
       <Sidebar
         activeTab={activeTab}
         onSelect={setActiveTab}
-        userEmail={session.user.email ?? ""}
+        userEmail={session?.user.email ?? ""}
         onSignOut={() => void supabase.auth.signOut()}
       />
       <main className="flex-1 space-y-8 px-6 pb-24 pt-8 md:px-8 md:pb-10">
